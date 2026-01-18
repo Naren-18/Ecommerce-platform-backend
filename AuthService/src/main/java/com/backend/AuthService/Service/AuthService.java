@@ -31,6 +31,8 @@ public class AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder; // This will have instance of the BCryptPasswordEncoder(12) which u have explicitly mentioned in the SecurityConfig
 
+    @Autowired
+    private JwtService jwtService;
 
     public ResponseEntity<String> register(RegisterRequest registerRequest) {
         Optional<Users> existingUser = usersRepo.findByEmail(registerRequest.getEmail());
@@ -50,6 +52,7 @@ public class AuthService {
         }
         return ResponseEntity.ok("User successfully registered");
     }
+
 //     This Does the manual Username and Password validation does not involve the Spring Security
 
 //    public ResponseEntity<String> login(LoginRequest loginRequest) {
@@ -64,11 +67,12 @@ public class AuthService {
 //        return ResponseEntity.ok("Logged in Successfully");
 //    }
 
+    //The below method uses Spring security to validated the credentials
     public ResponseEntity<String> authenticateUser(LoginRequest loginRequest){
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(),loginRequest.getPassword()));
         if(authentication.isAuthenticated())
-            return ResponseEntity.ok("Logged in Successfully");
+            return new ResponseEntity<>(jwtService.generateToken(loginRequest.getEmail()),HttpStatus.OK);
         else
             return new ResponseEntity<String>("Check your credentials",HttpStatus.BAD_REQUEST);
     }
