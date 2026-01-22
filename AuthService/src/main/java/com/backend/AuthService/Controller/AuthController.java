@@ -4,6 +4,7 @@ import com.backend.AuthService.Model.Dto.LoginRequest;
 import com.backend.AuthService.Model.Dto.RegisterRequest;
 import com.backend.AuthService.Model.Users;
 import com.backend.AuthService.Service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -17,7 +18,7 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest registerRequest)
+    public ResponseEntity<String> register(@RequestBody @Valid RegisterRequest registerRequest)
     {
         return authService.register(registerRequest);
     }
