@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -21,16 +22,27 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    //For right now genetrating the new secret key everytime you restart the application is fine but
-    // For Production you have to a stabled one so instead of this stores the secret key in the
-    // properties file and use it
 
+
+    @Value("${jwt.secret}")
     private String secretKey;
 
-    public JwtService()
-    {
-        secretKey = getSecretKey();
-    }
+    //**The below code is used to create new jwt secret everytime you run it**
+//    public JwtService()
+//    {
+//        secretKey = getSecretKey();
+//    }
+
+    //   private String getSecretKey() {
+//        try{
+//            KeyGenerator keyGen =KeyGenerator.getInstance("HmacSHA256");
+//            SecretKey secretKey = keyGen.generateKey();
+//            return Base64.getEncoder().encodeToString(secretKey.getEncoded());
+//        }catch (Exception e)
+//        {
+//            throw new RuntimeException("Error in getting secret Key",e);
+//        }
+//    }
 
     public String generateToken(String email) {
         Map<String, Object> claims =new HashMap<>();
@@ -48,16 +60,7 @@ public class JwtService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    private String getSecretKey() {
-        try{
-            KeyGenerator keyGen =KeyGenerator.getInstance("HmacSHA256");
-            SecretKey secretKey = keyGen.generateKey();
-            return Base64.getEncoder().encodeToString(secretKey.getEncoded());
-        }catch (Exception e)
-        {
-            throw new RuntimeException("Error in getting secret Key",e);
-        }
-    }
+
 
     //This method is used to extract Username from the token
     public String extractUsername(String token) {
