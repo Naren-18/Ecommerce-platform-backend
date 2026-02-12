@@ -7,11 +7,13 @@ import com.backend.InventoryService.Model.Dto.InitInventoryRequest;
 import com.backend.InventoryService.Model.Dto.InventoryResponse;
 import com.backend.InventoryService.Model.Dto.QuantityRequest;
 import com.backend.InventoryService.Model.InventoryItem;
+import com.backend.InventoryService.Model.Mapper.InventoryMapper;
 import com.backend.InventoryService.Repo.InventoryRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +23,9 @@ public class InventoryService {
 
     @Autowired
     private InventoryRepo inventoryRepo;
+
+    @Autowired
+    private InventoryMapper inventoryMapper;
 
     //Creating a new inventory item
     @Transactional
@@ -32,7 +37,6 @@ public class InventoryService {
                         .productId(productId)
                         .availableQuantity(initInventoryRequest.getInitialQuantity())
                         .build();
-
                 inventoryRepo.save(newItem);
 
         }
@@ -48,25 +52,31 @@ public class InventoryService {
         InventoryItem existingItem = inventoryRepo.findById(productId)
                 .orElseThrow(()-> new ProductNotFoundException("Product not found"));
 
-            InventoryResponse inventoryResponse = InventoryResponse.builder()
-                    .productId(existingItem.getProductId())
-                    .availableQuantity(existingItem.getAvailableQuantity())
-                    .reservedQuantity(existingItem.getReservedQuantity())
-                    .updatedAt(existingItem.getUpdatedAt())
-                    .build();
-            return inventoryResponse;
+//            InventoryResponse inventoryResponse = InventoryResponse.builder()
+//                    .productId(existingItem.getProductId())
+//                    .availableQuantity(existingItem.getAvailableQuantity())
+//                    .reservedQuantity(existingItem.getReservedQuantity())
+//                    .updatedAt(existingItem.getUpdatedAt())
+//                    .build();
+        InventoryResponse inventoryResponse = inventoryMapper.inventoryItemToInventoryResponse(existingItem);
+        return inventoryResponse;
 
     }
 
     //All the items in the repo
     public List<InventoryResponse> getAllQuantity() {
 
-        List<InventoryResponse> inventoryResponses = inventoryRepo.findAll().stream().map(Item -> InventoryResponse.builder()
-                .productId(Item.getProductId())
-                .availableQuantity(Item.getAvailableQuantity())
-                .reservedQuantity(Item.getReservedQuantity())
-                .updatedAt(Item.getUpdatedAt())
-                .build()).toList();
+//        List<InventoryResponse> inventoryResponses = inventoryRepo.findAll().stream().map(Item -> InventoryResponse.builder()
+//                .productId(Item.getProductId())
+//                .availableQuantity(Item.getAvailableQuantity())
+//                .reservedQuantity(Item.getReservedQuantity())
+//                .updatedAt(Item.getUpdatedAt())
+//                .build()).toList();
+
+        List<InventoryResponse> inventoryResponses = inventoryRepo.findAll()
+                .stream()
+                .map(Item -> inventoryMapper.inventoryItemToInventoryResponse(Item))
+                .toList();
 
         return inventoryResponses;
 
