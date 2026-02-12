@@ -1,9 +1,7 @@
 package com.backend.ProductService.Service;
 
-import com.backend.ProductService.Model.Dto.AddProductRequest;
-import com.backend.ProductService.Model.Dto.ProductResponse;
-import com.backend.ProductService.Model.Dto.UpdateProductRequest;
-import com.backend.ProductService.Model.Dto.UpdateProductStatusRequest;
+import com.backend.ProductService.Exception.ProductNotFoundException;
+import com.backend.ProductService.Model.Dto.*;
 import com.backend.ProductService.Model.Mapper.ProductMapper;
 import com.backend.ProductService.Model.Product;
 import com.backend.ProductService.Model.ProductStatus;
@@ -24,7 +22,7 @@ public class ProductService {
     @Autowired
     private ProductRepo productRepo;
 //add product method
-    public ResponseEntity<String> addProduct(AddProductRequest addProductRequest) {
+    public String addProduct(AddProductRequest addProductRequest) {
 
 //        Product product = new Product();
 //        product.setName(addProductRequest.getName());
@@ -34,25 +32,25 @@ public class ProductService {
 //        product.setCurrency(addProductRequest.getCurrency());
 //        product.setStatus(addProductRequest.getStatus()==null ? ProductStatus.DRAFT:addProductRequest.getStatus());
 
-        //Using Builder
-        productRepo.save(
-                Product.builder()
-                .name(addProductRequest.getName())
-                .description(addProductRequest.getDescription())
-                .imageUrl(addProductRequest.getImageUrl())
-                .price(addProductRequest.getPrice())
-                .currency(addProductRequest.getCurrency())
-                .status(addProductRequest.getStatus()==null ? ProductStatus.DRAFT : addProductRequest.getStatus())
-                .build()
-        );
+        // ================= Using Builder ======================
+//        Product.builder()
+//                .name(addProductRequest.getName())
+//                .description(addProductRequest.getDescription())
+//                .imageUrl(addProductRequest.getImageUrl())
+//                .price(addProductRequest.getPrice())
+//                .currency(addProductRequest.getCurrency())
+//                .status(addProductRequest.getStatus()==null ? ProductStatus.DRAFT : addProductRequest.getStatus())
+//                .build();
 
-        return new ResponseEntity<String>("Product added successfully", HttpStatus.CREATED);
+// ================= Using Mapper ======================
+        productRepo.save(productMapper.addProductRequestToProduct(addProductRequest));
+        return "Product added successfully";
     }
 
 
 
 //As of now it is ok next I have to use Streams and Builder
-    public ResponseEntity<List<ProductResponse>> getProducts() {
+    public List<ProductResponse> getProducts() {
         List<Product> product = productRepo.findAll();
 
         List<ProductResponse> productResponses = new ArrayList<>();
@@ -72,73 +70,76 @@ public class ProductService {
 //              productResponse.setCreatedAt(p.getCreatedAt());
 //              productResponse.setUpdatedAt(p.getUpdatedAt());
 
-            //Using Builder
-              productResponses.add(
-                      ProductResponse.builder()
-                      .productId(p.getProductId())
-                      .name(p.getName())
-                      .description(p.getDescription())
-                      .imageUrl(p.getImageUrl())
-                      .price(p.getPrice())
-                      .currency(p.getCurrency())
-                      .status(p.getStatus())
-                      .createdAt(p.getCreatedAt())
-                      .updatedAt(p.getUpdatedAt())
-                      .build()
-              );
+            //=========== Using Builder ===============
+//              productResponses.add(
+//                      ProductResponse.builder()
+//                      .productId(p.getProductId())
+//                      .name(p.getName())
+//                      .description(p.getDescription())
+//                      .imageUrl(p.getImageUrl())
+//                      .price(p.getPrice())
+//                      .currency(p.getCurrency())
+//                      .status(p.getStatus())
+//                      .createdAt(p.getCreatedAt())
+//                      .updatedAt(p.getUpdatedAt())
+//                      .build()
+//              );
+
+              productResponses.add(productMapper.productToProductResponse(p));
         }
 
-        return ResponseEntity.ok(productResponses);
+        return productResponses;
     }
 
-    public ResponseEntity<ProductResponse> getProductById(UUID productId) {
+    public ProductResponse getProductById(UUID productId) {
 
         Optional<Product> existingProduct = productRepo.findById(productId);
 
         if(existingProduct.isEmpty())
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            throw new ProductNotFoundException("Product not found");
         else
         {
             Product product = existingProduct.get();
-            ProductResponse productResponse = ProductResponse.builder()
-                    .productId(product.getProductId())
-                    .name(product.getName())
-                    .description(product.getDescription())
-                    .imageUrl(product.getImageUrl())
-                    .price(product.getPrice())
-                    .currency(product.getCurrency())
-                    .status(product.getStatus())
-                    .createdAt(product.getCreatedAt())
-                    .updatedAt(product.getUpdatedAt())
-                    .build();
-            return ResponseEntity.ok(productResponse);
+
+//            ProductResponse productResponse = ProductResponse.builder()
+//                    .productId(product.getProductId())
+//                    .name(product.getName())
+//                    .description(product.getDescription())
+//                    .imageUrl(product.getImageUrl())
+//                    .price(product.getPrice())
+//                    .currency(product.getCurrency())
+//                    .status(product.getStatus())
+//                    .createdAt(product.getCreatedAt())
+//                    .updatedAt(product.getUpdatedAt())
+//                    .build();
+            return  productMapper.productToProductResponse(product);
         }
     }
 
 //Updates the complete product
-    public ResponseEntity<String> updateProduct(UUID productId, UpdateProductRequest updateProductRequest) {
+    public String updateProduct(UUID productId, UpdateProductRequest updateProductRequest) {
         Optional<Product> existingProduct = productRepo.findById(productId);
 
         if(existingProduct.isPresent())
         {
             Product product = existingProduct.get();
-            product.setName(updateProductRequest.getName());
-            product.setDescription(updateProductRequest.getDescription());
-            product.setImageUrl(updateProductRequest.getImageUrl());
-            product.setPrice(updateProductRequest.getPrice());
-            product.setCurrency(updateProductRequest.getCurrency());
-            product.setStatus(updateProductRequest.getStatus()==null ? ProductStatus.DRAFT : updateProductRequest.getStatus());
-
+//            product.setName(updateProductRequest.getName());
+//            product.setDescription(updateProductRequest.getDescription());
+//            product.setImageUrl(updateProductRequest.getImageUrl());
+//            product.setPrice(updateProductRequest.getPrice());
+//            product.setCurrency(updateProductRequest.getCurrency());
+//            product.setStatus(updateProductRequest.getStatus()==null ? ProductStatus.DRAFT : updateProductRequest.getStatus());
+            productMapper.updateProductRequestToProduct(updateProductRequest,product);
             productRepo.save(product);
 
-            return ResponseEntity.ok("Product updated successfully");
+            return "Product updated successfully";
         }
         else
-            return new ResponseEntity<String>("Product not found",HttpStatus.NOT_FOUND);
+            throw new ProductNotFoundException("Product not found") ;
     }
 
     //Updates just status of the product
-    public ResponseEntity<String> updateProductStatus(UUID productId, UpdateProductStatusRequest updateProductStatusRequest) {
+    public String updateProductStatus(UUID productId, UpdateProductStatusRequest updateProductStatusRequest) {
        Optional<Product> existingProduct = productRepo.findById(productId);
 
        if (existingProduct.isPresent())
@@ -146,36 +147,50 @@ public class ProductService {
            Product product = existingProduct.get();
            product.setStatus(updateProductStatusRequest.getStatus()==null ? ProductStatus.DRAFT : updateProductStatusRequest.getStatus());
            productRepo.save(product);
-           return ResponseEntity.ok("Status updated successfully");
+           return "Status updated successfully";
        }
        else
-           return new ResponseEntity<String>("Product not found",HttpStatus.NOT_FOUND);
+           throw new ProductNotFoundException("Product not found") ;
     }
 
     @Autowired
     private ProductMapper productMapper;
     //Updates the product partially
-    public ResponseEntity<String> updateProductPartially(UUID productId, UpdateProductRequest updateProductRequest) {
+    public String updateProductPartially(UUID productId, PatchUpdateProductRequest patchUpdateProductRequest) {
         Optional<Product> existingProduct = productRepo.findById(productId);
 
         if(existingProduct.isPresent())
         {
             Product product = existingProduct.get();
-            productMapper.updateProductRequestToProduct(updateProductRequest,product);
+            productMapper.patchupdateProductRequestToProduct(patchUpdateProductRequest,product);
             productRepo.save(product);
 
-            return ResponseEntity.ok("Product updated successfully");
+            return "Product updated successfully";
         }
         else
-            return new ResponseEntity<String>("Product not found",HttpStatus.NOT_FOUND);
+            throw new ProductNotFoundException("Product not found");
     }
 
 
-    public ResponseEntity<String> deleteProductById(UUID productId) {
+    public String deleteProductById(UUID productId) {
         return productRepo.findById(productId).
                 map(product -> {
                     productRepo.delete(product);
-                    return new ResponseEntity<String>("Deleted successfully",HttpStatus.OK);
-                }).orElse(new ResponseEntity<String>("Product not found",HttpStatus.NOT_FOUND));
+                    return "Deleted successfully";
+                }).orElseThrow(()-> new ProductNotFoundException("Product not found"));
+    }
+
+    public ProductPriceResponse getProductPriceById(UUID productId) {
+       Optional<Product> existingProduct = productRepo.findById(productId);
+       if(existingProduct.isPresent())
+       {
+           Product product = existingProduct.get();
+           ProductPriceResponse productPriceResponse = new ProductPriceResponse();
+           productPriceResponse.setPrice(product.getPrice());
+           productPriceResponse.setCurrency(product.getCurrency());
+           return productPriceResponse;
+       }
+       else
+           throw new ProductNotFoundException("Product not found");
     }
 }

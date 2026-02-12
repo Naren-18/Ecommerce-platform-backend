@@ -18,7 +18,9 @@ public class AddProductRequest {
     @NotBlank(message = "Product name is required")
     private String name;
 
+    @Size(max=2000,message = "Description should not be more than 2000 characters")
     private String description;
+
     private String imageUrl;
 
     @NotNull(message = "Price is required")
