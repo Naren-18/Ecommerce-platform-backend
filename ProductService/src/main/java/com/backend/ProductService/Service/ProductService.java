@@ -1,14 +1,17 @@
 package com.backend.ProductService.Service;
 
+import com.backend.ProductService.Client.Dto.ImageKeyValidationResponse;
+import com.backend.ProductService.Client.MediaClient;
+import com.backend.ProductService.Exception.ProductImageValidationException;
 import com.backend.ProductService.Exception.ProductNotFoundException;
 import com.backend.ProductService.Model.Dto.*;
 import com.backend.ProductService.Model.Mapper.ProductMapper;
 import com.backend.ProductService.Model.Product;
 import com.backend.ProductService.Model.ProductStatus;
 import com.backend.ProductService.Repo.ProductRepo;
+import feign.FeignException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -17,11 +20,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class ProductService {
 
     @Autowired
     private ProductRepo productRepo;
-//add product method
+    @Autowired
+    private MediaClient mediaClient;
+
+    //add product method
     public String addProduct(AddProductRequest addProductRequest) {
 
 //        Product product = new Product();
@@ -41,7 +48,17 @@ public class ProductService {
 //                .currency(addProductRequest.getCurrency())
 //                .status(addProductRequest.getStatus()==null ? ProductStatus.DRAFT : addProductRequest.getStatus())
 //                .build();
+        if (addProductRequest.getImageKey() != null)
+        {
+            ImageKeyValidationResponse validation =
+                    mediaClient.validateImageKey(addProductRequest.getImageKey());
+            if (!validation.isValid())
+            {
+                throw new ProductImageValidationException
+                        ("Invalid Key. Status: "+validation.getStatus());
+            }
 
+        }
 // ================= Using Mapper ======================
         productRepo.save(productMapper.addProductRequestToProduct(addProductRequest));
         return "Product added successfully";
@@ -49,7 +66,7 @@ public class ProductService {
 
 
 
-//As of now it is ok next I have to use Streams and Builder
+
     public List<ProductResponse> getProducts() {
         List<Product> product = productRepo.findAll();
 
@@ -129,6 +146,17 @@ public class ProductService {
 //            product.setPrice(updateProductRequest.getPrice());
 //            product.setCurrency(updateProductRequest.getCurrency());
 //            product.setStatus(updateProductRequest.getStatus()==null ? ProductStatus.DRAFT : updateProductRequest.getStatus());
+
+            if (updateProductRequest.getImageKey() != null)
+            {
+                ImageKeyValidationResponse validation =
+                        mediaClient.validateImageKey(updateProductRequest.getImageKey());
+                if(!validation.isValid())
+                {
+                    throw new ProductImageValidationException("Invalid Key. Status: "+validation.getStatus());
+                }
+            }
+
             productMapper.updateProductRequestToProduct(updateProductRequest,product);
             productRepo.save(product);
 
@@ -162,6 +190,17 @@ public class ProductService {
         if(existingProduct.isPresent())
         {
             Product product = existingProduct.get();
+
+            if (patchUpdateProductRequest.getImageKey() != null)
+            {
+                ImageKeyValidationResponse validation =
+                        mediaClient.validateImageKey(patchUpdateProductRequest.getImageKey());
+                if(!validation.isValid())
+                {
+                    throw new ProductImageValidationException("Invalid Key. Status: "+validation.getStatus());
+                }
+            }
+
             productMapper.patchupdateProductRequestToProduct(patchUpdateProductRequest,product);
             productRepo.save(product);
 
@@ -173,11 +212,26 @@ public class ProductService {
 
 
     public String deleteProductById(UUID productId) {
-        return productRepo.findById(productId).
-                map(product -> {
-                    productRepo.delete(product);
-                    return "Deleted successfully";
-                }).orElseThrow(()-> new ProductNotFoundException("Product not found"));
+       Product product = productRepo.findById(productId)
+               .orElseThrow(()-> new ProductNotFoundException("Product not found"));
+
+       String imageKey = product.getImageKey();
+       productRepo.delete(product);
+
+       if (imageKey!=null && !imageKey.isBlank())
+       {
+           try
+           {
+               mediaClient.deleteImageKey(imageKey);
+           }catch (FeignException fe)
+           {
+               log.error("Media cleanup failed ImageKey:{}.Manual cleanup is needed.", imageKey, fe);
+           }
+       }
+
+
+
+       return "Deleted successfully";
     }
 
     public ProductPriceResponse getProductPriceById(UUID productId) {
@@ -192,5 +246,22 @@ public class ProductService {
        }
        else
            throw new ProductNotFoundException("Product not found");
+    }
+
+    public ProductResponse updateProductImage(UUID productId, UpdateProductImageRequest updateProductImageRequest) {
+        Product existingProduct = productRepo.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException("Product Not Found"));
+
+        ImageKeyValidationResponse validation =
+                mediaClient.validateImageKey(updateProductImageRequest.getImageKey());
+        if (!validation.isValid())
+        {
+            throw new ProductImageValidationException("Invalid Key. Status: "+validation.getStatus());
+        }
+        existingProduct.setImageKey(updateProductImageRequest.getImageKey());
+
+        Product updatedProduct = productRepo.save(existingProduct);
+
+        return productMapper.productToProductResponse(updatedProduct);
     }
 }

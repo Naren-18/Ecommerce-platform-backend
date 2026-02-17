@@ -30,13 +30,18 @@ public class ProductController {
 
     //This is the partial product update controller
     @PatchMapping("/product/{productId}")
-    public ResponseEntity<String> updateProductPartially(@PathVariable UUID productId, @RequestBody PatchUpdateProductRequest patchUpdateProductRequest){
+    public ResponseEntity<String> updateProductPartially(@PathVariable UUID productId, @RequestBody @Valid PatchUpdateProductRequest patchUpdateProductRequest){
         return ResponseEntity.ok(productService.updateProductPartially(productId,patchUpdateProductRequest));
     }
 
     @PatchMapping("/product/{productId}/status")
     public ResponseEntity<String> updateProductStatus(@PathVariable UUID productId, @RequestBody UpdateProductStatusRequest updateProductStatusRequest){
         return ResponseEntity.ok(productService.updateProductStatus(productId,updateProductStatusRequest));
+    }
+
+    @PatchMapping("/product/{productId}/image")
+    public ResponseEntity<ProductResponse> updateProductImage(@PathVariable UUID productId, @RequestBody @Valid UpdateProductImageRequest updateProductImageRequest ){
+        return ResponseEntity.ok(productService.updateProductImage(productId,updateProductImageRequest));
     }
 
     @GetMapping("/products")

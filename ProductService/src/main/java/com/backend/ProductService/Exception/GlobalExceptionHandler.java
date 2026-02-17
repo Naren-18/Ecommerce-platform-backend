@@ -69,4 +69,17 @@ public class GlobalExceptionHandler {
                 .path(request.getRequestURI())
                 .build();
     }
+
+    @ExceptionHandler(ProductImageValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponseDto handleProductImageValidationException(ProductImageValidationException e, HttpServletRequest request)
+    {
+        return ErrorResponseDto.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(e.getMessage())
+                .path(request.getRequestURI())
+                .build();
+    }
+
+
 }

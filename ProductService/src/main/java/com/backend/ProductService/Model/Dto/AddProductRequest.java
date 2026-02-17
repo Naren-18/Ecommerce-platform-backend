@@ -21,7 +21,8 @@ public class AddProductRequest {
     @Size(max=2000,message = "Description should not be more than 2000 characters")
     private String description;
 
-    private String imageUrl;
+    @Pattern(regexp = "^media/.*",message = "image Key should start with media/")
+    private String imageKey;
 
     @NotNull(message = "Price is required")
     @DecimalMin("0.0")

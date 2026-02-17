@@ -18,7 +18,7 @@ public class ProductResponse {
     private UUID productId;
     private String name;
     private String description;
-    private String imageUrl;
+    private String imageKey;
     private BigDecimal price;
     private String currency;
 

@@ -1,10 +1,7 @@
 package com.backend.ProductService.Model.Dto;
 
 import com.backend.ProductService.Model.ProductStatus;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,7 +21,8 @@ public class UpdateProductRequest {
     @Size(max=2000,message = "Description should not be more than 2000 characters")
     private String description;
 
-    private String imageUrl;
+    @Pattern(regexp = "^media/.*",message = "image Key should start with media/")
+    private String imageKey;
 
     @NotNull(message = "Price is required")
     @DecimalMin("0.0")
