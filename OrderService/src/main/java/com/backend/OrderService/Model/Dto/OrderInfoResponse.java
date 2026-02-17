@@ -7,22 +7,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class OrderResponse {
-
-    private UUID orderId;
+public class OrderInfoResponse {
     private String orderNumber;
     private BigDecimal totalAmount;
     private String currency;
     private OrderStatus status;
-    private Instant createdAt;
-    private List<OrderItemResponse> items;
-
 }

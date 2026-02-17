@@ -7,8 +7,7 @@ import com.backend.OrderService.Client.ProductClient;
 import com.backend.OrderService.Exception.OrderFailedException;
 import com.backend.OrderService.Exception.OrderNotFoundException;
 import com.backend.OrderService.Exception.OrderStateException;
-import com.backend.OrderService.Model.Dto.OrderItemRequest;
-import com.backend.OrderService.Model.Dto.OrderRequest;
+import com.backend.OrderService.Model.Dto.*;
 import com.backend.OrderService.Model.OrderItem;
 import com.backend.OrderService.Model.OrderStatus;
 import com.backend.OrderService.Model.Orders;
@@ -43,7 +42,7 @@ public class OrderService {
         order.setUserId(orderRequest.getUserId());
 
         List<OrderItem> orderItems = new ArrayList<>();
-        BigDecimal TotalAmount = BigDecimal.ZERO;
+        BigDecimal totalAmount = BigDecimal.ZERO;
         String currency = null;
 
         for(OrderItemRequest orderItemRequest : orderRequest.getItems())
@@ -63,7 +62,7 @@ public class OrderService {
                    priceResponse.getPrice()
                            .multiply(BigDecimal.valueOf(orderItemRequest.getQuantity()));
            //This adds the total amount of the order
-           TotalAmount = TotalAmount.add(itemTotal);
+           totalAmount = totalAmount.add(itemTotal);
 
             //Creating OrderItem from the OrderItemRequest;
             OrderItem orderItem = OrderItem.builder()
@@ -75,7 +74,7 @@ public class OrderService {
 
             orderItems.add(orderItem);
         }
-        order.setTotalAmount(TotalAmount);
+        order.setTotalAmount(totalAmount);
         order.setCurrency(currency);
         order.setOrderItems(orderItems);
         orderRepo.save(order);
@@ -118,7 +117,7 @@ public class OrderService {
     }
 
     @Transactional
-    public void     cancelOrder(UUID orderId)
+    public void cancelOrder(UUID orderId)
     {
         Orders order = orderRepo.findById(orderId).orElseThrow(
                 ()-> new OrderNotFoundException("Order Not Found")
@@ -156,7 +155,8 @@ public class OrderService {
     @Transactional
     public void confirm(UUID orderId)
     {
-        Orders order = orderRepo.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Order Not Found"));
+        Orders order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order Not Found"));
 
         if (order.getStatus()==OrderStatus.RESERVED)
         {
@@ -180,5 +180,39 @@ public class OrderService {
         {
             throw new OrderStateException("Only RESERVED orders can be confirmed");
         }
+    }
+
+    public OrderResponse getOrderById(UUID orderId) {
+        Orders order = orderRepo.findById(orderId)
+                .orElseThrow(()->new OrderNotFoundException("Order Not Found"));
+        List<OrderItemResponse> orderItemResponses =
+                order.getOrderItems()
+                        .stream().map(orderItem ->
+                            OrderItemResponse.builder()
+                                    .productId(orderItem.getProductId())
+                                    .quantity(orderItem.getQuantity())
+                                    .build()
+                        ).toList();
+
+       return OrderResponse.builder()
+                .orderId(order.getOrderId())
+                .orderNumber(order.getOrderNumber())
+                .totalAmount(order.getTotalAmount())
+                .currency(order.getCurrency())
+                .status(order.getStatus())
+                .createdAt(order.getCreatedAt())
+                .items(orderItemResponses)
+                .build();
+
+    }
+
+    public OrderInfoResponse getOrder(UUID orderId) {
+       Orders order = orderRepo.findById(orderId).orElseThrow(()->new OrderNotFoundException("Order Not Found"));
+
+       return OrderInfoResponse.builder()
+                .orderNumber(order.getOrderNumber())
+                .totalAmount(order.getTotalAmount())
+                .status(order.getStatus())
+                .currency(order.getCurrency()).build();
     }
 }

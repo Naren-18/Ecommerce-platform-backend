@@ -14,14 +14,14 @@ public interface InventoryClient {
 
     //Reserve the quantity
     @PostMapping("/{productId}/reserve")
-    public String reserve(@PathVariable UUID productId, @RequestBody QuantityRequest quantityRequest);
+    String reserve(@PathVariable UUID productId, @RequestBody QuantityRequest quantityRequest);
 
     //Release the quantity
     @PostMapping("/{productId}/release")
-    public String release(@PathVariable UUID productId, @RequestBody QuantityRequest quantityRequest);
+    String release(@PathVariable UUID productId, @RequestBody QuantityRequest quantityRequest);
 
     //Commit the quantity
     @PostMapping("/{productId}/commit")
-    public String commit(@PathVariable UUID productId, @RequestBody QuantityRequest quantityRequest);
+    String commit(@PathVariable UUID productId, @RequestBody QuantityRequest quantityRequest);
 
 }

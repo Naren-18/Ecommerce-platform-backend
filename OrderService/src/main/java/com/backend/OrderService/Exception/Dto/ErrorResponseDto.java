@@ -18,4 +18,5 @@ public class ErrorResponseDto {
 
     @Builder.Default
     private Instant timestamp = Instant.now();
+
 }
