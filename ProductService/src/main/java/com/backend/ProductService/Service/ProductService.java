@@ -28,6 +28,31 @@ public class ProductService {
     @Autowired
     private MediaClient mediaClient;
 
+    private void validateImageKeyIfPresent(String imageKey)
+    {
+        if(imageKey == null || imageKey.isBlank()) return;
+
+        ImageKeyValidationResponse validation = mediaClient.validateImageKey(imageKey);
+        if (!validation.isValid())
+            throw new ProductImageValidationException
+                    ("Invalid Key. Status: "+validation.getStatus());
+
+    }
+
+    private void cleanupOldImageKeyIfChanged(String oldKey,String newKey)
+    {
+        if(oldKey == null || oldKey.isBlank()) return;
+        if (newKey == null || newKey.isBlank()) return;
+        if (oldKey.equals(newKey)) return;
+        try {
+            mediaClient.deleteImageKey(oldKey);
+        }catch (FeignException fe)
+        {
+            log.error("Media cleanup failed oldImageKey={}. Manual cleanup needed.", oldKey, fe);
+        }
+
+    }
+
     //add product method
     public String addProduct(AddProductRequest addProductRequest) {
 
@@ -48,17 +73,8 @@ public class ProductService {
 //                .currency(addProductRequest.getCurrency())
 //                .status(addProductRequest.getStatus()==null ? ProductStatus.DRAFT : addProductRequest.getStatus())
 //                .build();
-        if (addProductRequest.getImageKey() != null)
-        {
-            ImageKeyValidationResponse validation =
-                    mediaClient.validateImageKey(addProductRequest.getImageKey());
-            if (!validation.isValid())
-            {
-                throw new ProductImageValidationException
-                        ("Invalid Key. Status: "+validation.getStatus());
-            }
 
-        }
+       validateImageKeyIfPresent(addProductRequest.getImageKey());
 // ================= Using Mapper ======================
         productRepo.save(productMapper.addProductRequestToProduct(addProductRequest));
         return "Product added successfully";
@@ -147,19 +163,15 @@ public class ProductService {
 //            product.setCurrency(updateProductRequest.getCurrency());
 //            product.setStatus(updateProductRequest.getStatus()==null ? ProductStatus.DRAFT : updateProductRequest.getStatus());
 
-            if (updateProductRequest.getImageKey() != null)
-            {
-                ImageKeyValidationResponse validation =
-                        mediaClient.validateImageKey(updateProductRequest.getImageKey());
-                if(!validation.isValid())
-                {
-                    throw new ProductImageValidationException("Invalid Key. Status: "+validation.getStatus());
-                }
-            }
+            String oldKey = product.getImageKey();
+            String newKey = updateProductRequest.getImageKey();
+
+            validateImageKeyIfPresent(newKey);
 
             productMapper.updateProductRequestToProduct(updateProductRequest,product);
             productRepo.save(product);
 
+            cleanupOldImageKeyIfChanged(oldKey,newKey);
             return "Product updated successfully";
         }
         else
@@ -191,18 +203,14 @@ public class ProductService {
         {
             Product product = existingProduct.get();
 
-            if (patchUpdateProductRequest.getImageKey() != null)
-            {
-                ImageKeyValidationResponse validation =
-                        mediaClient.validateImageKey(patchUpdateProductRequest.getImageKey());
-                if(!validation.isValid())
-                {
-                    throw new ProductImageValidationException("Invalid Key. Status: "+validation.getStatus());
-                }
-            }
+            String oldKey = product.getImageKey();
+            String newKey = patchUpdateProductRequest.getImageKey();
 
+            validateImageKeyIfPresent(newKey);
             productMapper.patchupdateProductRequestToProduct(patchUpdateProductRequest,product);
             productRepo.save(product);
+
+            cleanupOldImageKeyIfChanged(oldKey,newKey);
 
             return "Product updated successfully";
         }
@@ -252,15 +260,14 @@ public class ProductService {
         Product existingProduct = productRepo.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException("Product Not Found"));
 
-        ImageKeyValidationResponse validation =
-                mediaClient.validateImageKey(updateProductImageRequest.getImageKey());
-        if (!validation.isValid())
-        {
-            throw new ProductImageValidationException("Invalid Key. Status: "+validation.getStatus());
-        }
-        existingProduct.setImageKey(updateProductImageRequest.getImageKey());
+        String oldKey = existingProduct.getImageKey();
+        String newKey = updateProductImageRequest.getImageKey();
 
+        validateImageKeyIfPresent(newKey);
+        existingProduct.setImageKey(newKey);
         Product updatedProduct = productRepo.save(existingProduct);
+
+        cleanupOldImageKeyIfChanged(oldKey,newKey);
 
         return productMapper.productToProductResponse(updatedProduct);
     }
